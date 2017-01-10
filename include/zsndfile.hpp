@@ -3,7 +3,6 @@
 
 #include <string>
 #include <memory>
-#include <vector>
 #include <sndfile.h>
 
 namespace zsndfile
@@ -197,6 +196,33 @@ namespace zsndfile
         }
     }
 
+    template<typename sample_t>
+    constexpr bool is_valid_sample_type() noexcept
+    {
+        return false;
+    }
+    template<>
+    constexpr bool is_valid_sample_type<short>() noexcept
+    {
+        return true;
+    }
+    template<>
+    constexpr bool is_valid_sample_type<int>() noexcept
+    {
+        return true;
+    }
+    template<>
+    constexpr bool is_valid_sample_type<float>() noexcept
+    {
+        return true;
+    }
+    template<>
+    constexpr bool is_valid_sample_type<double>() noexcept
+    {
+        return true;
+    }
+
+
 
     template<sound_file_mode mode>
     class sound_file_handle
@@ -237,7 +263,7 @@ namespace zsndfile
             }
         }
 
-        //not going to wrap the enums for this one just yet, 
+        //not going to wrap the enums for this one just yet,
         int command(int cmd,void* data,int datasize)
         {
             return sd_command(_file,cmd,data,datasize);
@@ -477,32 +503,8 @@ namespace zsndfile
         }
     };
 
-    template<typename sample_t>
-    constexpr bool is_valid_sample_type() noexcept
-    {
-        return false;
-    }
-    template<>
-    constexpr bool is_valid_sample_type<short>() noexcept
-    {
-        return true;
-    }
-    template<>
-    constexpr bool is_valid_sample_type<int>() noexcept
-    {
-        return true;
-    }
-    template<>
-    constexpr bool is_valid_sample_type<float>() noexcept
-    {
-        return true;
-    }
-    template<>
-    constexpr bool is_valid_sample_type<double>() noexcept
-    {
-        return true;
-    }
 
+    //read only sound file object, indexable
     template<typename sample_t,std::size_t default_buffer_size=256>
     class sound_file
     {
