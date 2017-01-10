@@ -93,7 +93,7 @@ namespace zsndfile
       typemask = SF_FORMAT_TYPEMASK,
       endmask = SF_FORMAT_ENDMASK
     };
-    
+
     //enable or-ing of sound_file_format
     int operator | (const sound_file_format& lhs, const sound_file_format& rhs)
     {
@@ -899,12 +899,6 @@ namespace zsndfile
                                                     _current_idx(0)
         {}
 
-        //will allow file to be indexed
-        //if file is cached a simple lookup will happen
-        //if file is not cached, a read will happen
-        //NOTE: idea, maybe cache a section of the file if the whole file is not cached?
-        //            this will allow for faster lookup?
-
         //read_only indexing
         const sample_t& operator[](const std::size_t& idx) noexcept
         {
@@ -950,20 +944,16 @@ namespace zsndfile
             {
                 return _buffer[idx];
             }
+            else if ((idx >= _current_idx && idx < _current_idx + default_buffer_size) && _buffer != nullptr)
+            {
+                return _buffer[ idx - _current_idx ];
+            }
             else
             {
-                //do we already have that section loaded
-                if ((idx >= _current_idx && idx < _current_idx + default_buffer_size) && _buffer != nullptr)
-                {
-                    return _buffer[ idx - _current_idx ];
-                }
-                else
-                {
-                    _file.seek(idx,seek_mode::from_start);
-                    auto&& data = _file.read<sample_t>(default_buffer_size);
-                    std::swap(_buffer,data.first);
-                    return _buffer[0];
-                }
+                _file.seek(idx,seek_mode::from_start);
+                auto&& data = _file.read<sample_t>(default_buffer_size);
+                std::swap(_buffer,data.first);
+                return _buffer[0];
             }
         }
     };
