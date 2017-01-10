@@ -109,16 +109,19 @@ namespace zsndfile
         {
             return sf_read_short(file,buff,count);
         }
+
         template<>
         sf_count_t zsf_read<int>(SNDFILE* file, int* buff, sf_count_t count)
         {
             return sf_read_int(file,buff,count);
         }
+
         template<>
         sf_count_t zsf_read<float>(SNDFILE* file, float* buff, sf_count_t count)
         {
             return sf_read_float(file,buff,count);
         }
+
         template<>
         sf_count_t zsf_read<double>(SNDFILE* file, double* buff, sf_count_t count)
         {
@@ -127,21 +130,25 @@ namespace zsndfile
 
         template<typename sample_t>
         sf_count_t zsf_readf(SNDFILE*,sample_t*,sf_count_t);
+
         template<>
         sf_count_t zsf_readf<short>(SNDFILE* file, short* buff, sf_count_t count)
         {
             return sf_readf_short(file,buff,count);
         }
+
         template<>
         sf_count_t zsf_readf<int>(SNDFILE* file, int* buff, sf_count_t count)
         {
             return sf_readf_int(file,buff,count);
         }
+
         template<>
         sf_count_t zsf_readf<float>(SNDFILE* file, float* buff, sf_count_t count)
         {
             return sf_readf_float(file,buff,count);
         }
+
         template<>
         sf_count_t zsf_readf<double>(SNDFILE* file, double* buff, sf_count_t count)
         {
@@ -151,21 +158,25 @@ namespace zsndfile
         //write
         template<typename sample_t>
         sf_count_t zsf_write(SNDFILE*,sample_t*,sf_count_t);
+
         template<>
         sf_count_t zsf_write<short>(SNDFILE* file, short* buff, sf_count_t count)
         {
             return sf_write_short(file,buff,count);
         }
+
         template<>
         sf_count_t zsf_write<int>(SNDFILE* file, int* buff, sf_count_t count)
         {
             return sf_write_int(file,buff,count);
         }
+
         template<>
         sf_count_t zsf_write<float>(SNDFILE* file, float* buff, sf_count_t count)
         {
             return sf_write_float(file,buff,count);
         }
+
         template<>
         sf_count_t zsf_write<double>(SNDFILE* file, double* buff, sf_count_t count)
         {
@@ -174,21 +185,25 @@ namespace zsndfile
 
         template<typename sample_t>
         sf_count_t zsf_writef(SNDFILE*,sample_t*,sf_count_t);
+
         template<>
         sf_count_t zsf_writef<short>(SNDFILE* file, short* buff, sf_count_t count)
         {
             return sf_writef_short(file,buff,count);
         }
+
         template<>
         sf_count_t zsf_writef<int>(SNDFILE* file, int* buff, sf_count_t count)
         {
             return sf_writef_int(file,buff,count);
         }
+
         template<>
         sf_count_t zsf_writef<float>(SNDFILE* file, float* buff, sf_count_t count)
         {
             return sf_writef_float(file,buff,count);
         }
+
         template<>
         sf_count_t zsf_writef<double>(SNDFILE* file, double* buff, sf_count_t count)
         {
@@ -201,21 +216,25 @@ namespace zsndfile
     {
         return false;
     }
+
     template<>
     constexpr bool is_valid_sample_type<short>() noexcept
     {
         return true;
     }
+
     template<>
     constexpr bool is_valid_sample_type<int>() noexcept
     {
         return true;
     }
+
     template<>
     constexpr bool is_valid_sample_type<float>() noexcept
     {
         return true;
     }
+
     template<>
     constexpr bool is_valid_sample_type<double>() noexcept
     {
@@ -242,6 +261,7 @@ namespace zsndfile
             int err = sf_error(_file);
             throw_if_error(err);
         }
+
         ~sound_file_handle()
         {
             sf_close(_file);
@@ -275,6 +295,7 @@ namespace zsndfile
             }
 
         }
+
         template<typename sample_t>
         sf_count_t read(const sf_count_t& sample_count,sample_t* buffer) noexcept
         {
@@ -282,6 +303,7 @@ namespace zsndfile
             return zsf_read(_file,buffer,sample_count);
 
         }
+
         template<typename sample_t>
         std::pair<std::unique_ptr<sample_t[]>,sf_count_t> read_frames(const sf_count_t& frame_count) noexcept
         {
@@ -297,6 +319,7 @@ namespace zsndfile
                 return std::make_pair(nullptr,0);
             }
         }
+
         template<typename sample_t>
         sf_count_t read_frames(const sf_count_t& frame_count, sample_t* buffer) noexcept
         {
@@ -308,76 +331,92 @@ namespace zsndfile
         {
             return _info.frames;
         }
+
         const int& channel_count() const noexcept
         {
             return _info.channels;
         }
+
         const int& sample_rate() const noexcept
         {
             return _info.samplerate;
         }
+
         const int& format() const noexcept
         {
             return _info.format;
         }
+
         const int& sections() const noexcept
         {
             return _info.sections;
         }
+
         const int& seekable() const noexcept
         {
             return _info.seekable;
         }
+
         //title
         std::string title() noexcept
         {
             return sf_get_string(_file,SF_STR_TITLE);
         }
+
         //copyright
         std::string copyright() noexcept
         {
             return sf_get_string(_file,SF_STR_COPYRIGHT);
         }
+
         //software
         std::string software() noexcept
         {
             return sf_get_string(_file,SF_STR_SOFTWARE);
         }
-//artist
+
+        //artist
         std::string artist() noexcept
         {
             return sf_get_string(_file,SF_STR_ARTIST);
         }
-//comment
+
+        //comment
         std::string comment() noexcept
         {
             return sf_get_string(_file,SF_STR_COMMENT);
         }
-//date
+
+        //date
         std::string date() noexcept
         {
             return sf_get_string(_file,SF_STR_DATE);
         }
-//album
+
+        //album
         std::string album() noexcept
         {
             return sf_get_string(_file,SF_STR_ALBUM);
         }
-//license
+
+        //license
         std::string license() noexcept
         {
             return sf_get_string(_file,SF_STR_LICENSE);
         }
-//track_number
+
+        //track_number
         std::string track_number() noexcept
         {
             return sf_get_string(_file,SF_STR_TRACKNUMBER);
         }
-//genre
+
+        //genre
         std::string genre() noexcept
         {
             return sf_get_string(_file,SF_STR_GENRE);
         }
+
     protected:
         SNDFILE* _file;
         SF_INFO _info;
@@ -409,6 +448,7 @@ namespace zsndfile
             int err = sf_error(_file);
             throw_if_error(err);
         }
+
         ~sound_file_handle()
         {
             sf_close(_file);
@@ -425,19 +465,22 @@ namespace zsndfile
         {
             return sf_seek(_file,nframes,static_cast<int>(smode));
         }
-//write
+
+        //write
         template<typename sample_t>
         sf_count_t write(sample_t* data,const sf_count_t& sample_count) noexcept
         {
             using detail::zsf_write;
             return zsf_write(_file,data,sample_count);
         }
+
         template<typename sample_t>
         sf_count_t write_frames(sample_t* data,const sf_count_t& frame_count) noexcept
         {
             using detail::zsf_writef;
             return zsf_writef(_file,data,frame_count);
         }
+
         void frame_count(const sf_count_t& value) noexcept
         {
             _info.frames = value;
@@ -467,36 +510,43 @@ namespace zsndfile
         {
             _info.seekable = value;
         }
+
         void title(const std::string& value)
         {
             auto err = sf_set_string(_file,SF_STR_TITLE,value.c_str());
             throw_if_error(err);
         }
+
         void copyright(const std::string& value)
         {
             auto err = sf_set_string(_file,SF_STR_COPYRIGHT,value.c_str());
             throw_if_error(err);
         }
+
         void software(const std::string& value)
         {
             auto err = sf_set_string(_file,SF_STR_SOFTWARE,value.c_str());
             throw_if_error(err);
         }
+
         void artist(const std::string& value)
         {
             auto err = sf_set_string(_file,SF_STR_ARTIST,value.c_str());
             throw_if_error(err);
         }
+
         void comment(const std::string& value)
         {
             auto err = sf_set_string(_file,SF_STR_COMMENT,value.c_str());
             throw_if_error(err);
         }
+
         void date(const std::string& value)
         {
             auto err = sf_set_string(_file,SF_STR_DATE,value.c_str());
             throw_if_error(err);
         }
+
         void album(const std::string& value)
         {
             auto err = sf_set_string(_file,SF_STR_ALBUM,value.c_str());
@@ -508,11 +558,13 @@ namespace zsndfile
             auto err = sf_set_string(_file,SF_STR_LICENSE,value.c_str());
             throw_if_error(err);
         }
+
         void track_number(const std::string& value)
         {
             auto err = sf_set_string(_file,SF_STR_TRACKNUMBER,value.c_str());
             throw_if_error(err);
         }
+
         void genre(const std::string& value)
         {
             auto err = sf_set_string(_file,SF_STR_GENRE,value.c_str());
@@ -548,6 +600,7 @@ namespace zsndfile
             int err = sf_error(_file);
             throw_if_error(err);
         }
+
         ~sound_file_handle()
         {
             sf_close(_file);
@@ -581,6 +634,7 @@ namespace zsndfile
             }
 
         }
+
         template<typename sample_t>
         sf_count_t read(const sf_count_t& sample_count,sample_t* buffer) noexcept
         {
@@ -588,6 +642,7 @@ namespace zsndfile
             return zsf_read(_file,buffer,sample_count);
 
         }
+
         template<typename sample_t>
         std::pair<std::unique_ptr<sample_t[]>,sf_count_t> read_frames(const sf_count_t& frame_count) noexcept
         {
@@ -604,6 +659,7 @@ namespace zsndfile
             }
 
         }
+
         template<typename sample_t>
         sf_count_t read_frames(const sf_count_t& frame_count, sample_t* buffer) noexcept
         {
@@ -618,6 +674,7 @@ namespace zsndfile
             using detail::zsf_write;
             return zsf_write(_file,data,sample_count);
         }
+
         template<typename sample_t>
         sf_count_t write_frames(sample_t* data,const sf_count_t& frame_count) noexcept
         {
@@ -630,22 +687,27 @@ namespace zsndfile
         {
             return _info.frames;
         }
+
         const int& channel_count() const noexcept
         {
             return _info.channels;
         }
+
         const int& sample_rate() const noexcept
         {
             return _info.samplerate;
         }
+
         const int& format() const noexcept
         {
             return _info.format;
         }
+
         const int& sections() const noexcept
         {
             return _info.sections;
         }
+
         const int& seekable() const noexcept
         {
             return _info.seekable;
@@ -680,7 +742,6 @@ namespace zsndfile
         {
             _info.seekable = value;
         }
-
         //metadata
 
         //title
@@ -688,6 +749,7 @@ namespace zsndfile
         {
             return sf_get_string(_file,SF_STR_TITLE);
         }
+
         void title(const std::string& value)
         {
             auto err = sf_set_string(_file,SF_STR_TITLE,value.c_str());
@@ -699,6 +761,7 @@ namespace zsndfile
         {
             return sf_get_string(_file,SF_STR_COPYRIGHT);
         }
+
         void copyright(const std::string& value)
         {
             auto err = sf_set_string(_file,SF_STR_COPYRIGHT,value.c_str());
@@ -710,6 +773,7 @@ namespace zsndfile
         {
             return sf_get_string(_file,SF_STR_SOFTWARE);
         }
+
         void software(const std::string& value)
         {
             auto err = sf_set_string(_file,SF_STR_SOFTWARE,value.c_str());
@@ -721,6 +785,7 @@ namespace zsndfile
         {
             return sf_get_string(_file,SF_STR_ARTIST);
         }
+
         void artist(const std::string& value)
         {
             auto err = sf_set_string(_file,SF_STR_ARTIST,value.c_str());
@@ -732,6 +797,7 @@ namespace zsndfile
         {
             return sf_get_string(_file,SF_STR_COMMENT);
         }
+
         void comment(const std::string& value)
         {
             auto err = sf_set_string(_file,SF_STR_COMMENT,value.c_str());
@@ -743,6 +809,7 @@ namespace zsndfile
         {
             return sf_get_string(_file,SF_STR_DATE);
         }
+
         void date(const std::string& value)
         {
             auto err = sf_set_string(_file,SF_STR_DATE,value.c_str());
@@ -754,6 +821,7 @@ namespace zsndfile
         {
             return sf_get_string(_file,SF_STR_ALBUM);
         }
+
         void album(const std::string& value)
         {
             auto err = sf_set_string(_file,SF_STR_ALBUM,value.c_str());
@@ -765,6 +833,7 @@ namespace zsndfile
         {
             return sf_get_string(_file,SF_STR_LICENSE);
         }
+
         void license(const std::string& value)
         {
             auto err = sf_set_string(_file,SF_STR_LICENSE,value.c_str());
@@ -776,6 +845,7 @@ namespace zsndfile
         {
             return sf_get_string(_file,SF_STR_TRACKNUMBER);
         }
+
         void track_number(const std::string& value)
         {
             auto err = sf_set_string(_file,SF_STR_TRACKNUMBER,value.c_str());
@@ -787,6 +857,7 @@ namespace zsndfile
         {
             return sf_get_string(_file,SF_STR_GENRE);
         }
+
         void genre(const std::string& value)
         {
             auto err = sf_set_string(_file,SF_STR_GENRE,value.c_str());
@@ -819,10 +890,10 @@ namespace zsndfile
         {}
 
         explicit sound_file(const int& fd,
-                            const int& close_fd
-                            ,const bool& cache_file):_file(fd,close_fd),
-                                                     _is_file_cached(cache_file_if_requested(cache_file)),
-                                                     _current_idx(0)
+                            const int& close_fd,
+                            const bool& cache_file):_file(fd,close_fd),
+                                                    _is_file_cached(cache_file_if_requested(cache_file)),
+                                                    _current_idx(0)
         {}
 
         //will allow file to be indexed
@@ -836,18 +907,23 @@ namespace zsndfile
         {
             return lookup(idx);
         }
+
         sound_file_handle<sound_file_mode::read_only>& file() noexcept
         {
             return _file;
         }
+
         const bool& is_cached() const noexcept
         {
             return _is_file_cached;
         }
     protected:
         sound_file_handle<sound_file_mode::read_only> _file;
+
         std::unique_ptr<sample_t[]> _buffer;
+
         const bool _is_file_cached;
+        
         std::size_t _current_idx;
 
         bool cache_file_if_requested(const bool& should_cache) noexcept
@@ -881,9 +957,9 @@ namespace zsndfile
             else
             {
                 //do we already have that section loaded
-                if ((idx >= _current_idx && idx < _current_idx + default_buffer_size) && _buffer!= nullptr)
+                if ((idx >= _current_idx && idx < _current_idx + default_buffer_size) && _buffer != nullptr)
                 {
-                    return _buffer[ idx - _current_idx];
+                    return _buffer[ idx - _current_idx ];
                 }
                 else
                 {
