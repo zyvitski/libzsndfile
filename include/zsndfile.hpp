@@ -99,7 +99,6 @@ namespace zsndfile
         return static_cast<int>(lhs) | static_cast<int>(rhs);
     }
 
-
     namespace detail
     {
         template<typename sample_t>
@@ -444,30 +443,25 @@ namespace zsndfile
             _info.frames = value;
         }
 
-
         void channel_count(const int& value) noexcept
         {
             _info.channels = value;
         }
-
 
         void sample_rate(const int& value) noexcept
         {
             _info.samplerate = value;
         }
 
-
         void format(const int& value) noexcept
         {
             _info.format = value;
         }
 
-
         void sections(const int& value) noexcept
         {
             _info.sections = value;
         }
-
 
         void seekable(const int& value) noexcept
         {
@@ -631,8 +625,6 @@ namespace zsndfile
             return zsf_writef(_file,data,frame_count);
         }
 
-
-
         //file format info
         const sf_count_t& frame_count() const noexcept
         {
@@ -664,37 +656,30 @@ namespace zsndfile
             _info.frames = value;
         }
 
-
         void channel_count(const int& value) noexcept
         {
             _info.channels = value;
         }
-
 
         void sample_rate(const int& value) noexcept
         {
             _info.samplerate = value;
         }
 
-
         void format(const int& value) noexcept
         {
             _info.format = value;
         }
-
 
         void sections(const int& value) noexcept
         {
             _info.sections = value;
         }
 
-
         void seekable(const int& value) noexcept
         {
             _info.seekable = value;
         }
-
-
 
         //metadata
 
@@ -819,7 +804,6 @@ namespace zsndfile
             }
         }
     };
-
 
     //read only sound file object, indexable
     template<typename sample_t,std::size_t default_buffer_size=256>
