@@ -257,10 +257,7 @@ namespace zsndfile
         }
         ~sound_file_handle()
         {
-            if(sf_close(_file) != 0)
-            {
-                throw std::runtime_error(sf_strerror(_file));
-            }
+            sf_close(_file);
         }
 
         //not going to wrap the enums for this one just yet,
