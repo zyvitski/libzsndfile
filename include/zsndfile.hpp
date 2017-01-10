@@ -93,6 +93,7 @@ namespace zsndfile
       typemask = SF_FORMAT_TYPEMASK,
       endmask = SF_FORMAT_ENDMASK
     };
+    
     //enable or-ing of sound_file_format
     int operator | (const sound_file_format& lhs, const sound_file_format& rhs)
     {
@@ -293,7 +294,6 @@ namespace zsndfile
             {
                 return std::make_pair(nullptr,0);
             }
-
         }
 
         template<typename sample_t>
@@ -419,6 +419,7 @@ namespace zsndfile
 
     protected:
         SNDFILE* _file;
+
         SF_INFO _info;
 
         inline void throw_if_error(int err)
@@ -572,6 +573,7 @@ namespace zsndfile
         }
     protected:
         SNDFILE* _file;
+
         SF_INFO _info;
 
         inline void throw_if_error(int err)
@@ -865,6 +867,7 @@ namespace zsndfile
         }
     protected:
         SNDFILE* _file;
+
         SF_INFO _info;
 
         inline void throw_if_error(int err)
@@ -923,7 +926,7 @@ namespace zsndfile
         std::unique_ptr<sample_t[]> _buffer;
 
         const bool _is_file_cached;
-        
+
         std::size_t _current_idx;
 
         bool cache_file_if_requested(const bool& should_cache) noexcept
@@ -937,15 +940,8 @@ namespace zsndfile
                     _file.read_frames<sample_t>(_file.frame_count(),_buffer.get());
                     return true;
                 }
-                else
-                {
-                    return false;
-                }
             }
-            else
-            {
-                return false;
-            }
+            return false;
         }
 
         inline sample_t& lookup(const std::size_t& idx) noexcept
