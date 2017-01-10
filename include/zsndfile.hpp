@@ -284,13 +284,14 @@ namespace zsndfile
         template<typename sample_t>
         std::pair<std::unique_ptr<sample_t[]>,sf_count_t> read(const sf_count_t& sample_count) noexcept
         {
-            try{
-                using detail::zsf_read;
-                std::unique_ptr<sample_t[]> outbuff{new sample_t[sample_count]};
+            using detail::zsf_read;
+            std::unique_ptr<sample_t[]> outbuff{new(std::nothrow) sample_t[sample_count]};
+            if(outbuff != nullptr)
+            {
                 auto ret = zsf_read(_file,outbuff.get(),sample_count);
                 return std::make_pair(std::move(outbuff),ret);
             }
-            catch(std::exception& e)
+            else
             {
                 return std::make_pair(nullptr,0);
             }
@@ -307,14 +308,13 @@ namespace zsndfile
         template<typename sample_t>
         std::pair<std::unique_ptr<sample_t[]>,sf_count_t> read_frames(const sf_count_t& frame_count) noexcept
         {
-            try
-            {
-                using detail::zsf_readf;
-                std::unique_ptr<sample_t[]> outbuff{new sample_t[frame_count * channel_count()]};
+            using detail::zsf_readf;
+            std::unique_ptr<sample_t[]> outbuff{new(std::nothrow) sample_t[frame_count * channel_count()]};
+            if(outbuff != nullptr){
                 auto ret = zsf_readf(_file,outbuff.get(),frame_count * channel_count());
                 return std::make_pair(std::move(outbuff),ret);
             }
-            catch (std::exception& e)
+            else
             {
                 return std::make_pair(nullptr,0);
             }
@@ -624,17 +624,17 @@ namespace zsndfile
         template<typename sample_t>
         std::pair<std::unique_ptr<sample_t[]>,sf_count_t> read(const sf_count_t& sample_count) noexcept
         {
-            try{
-                using detail::zsf_read;
-                std::unique_ptr<sample_t[]> outbuff{new sample_t[sample_count]};
+            using detail::zsf_read;
+            std::unique_ptr<sample_t[]> outbuff{new(std::nothrow) sample_t[sample_count]};
+            if(outbuff != nullptr)
+            {
                 auto ret = zsf_read(_file,outbuff.get(),sample_count);
                 return std::make_pair(std::move(outbuff),ret);
             }
-            catch(std::exception& e)
+            else
             {
                 return std::make_pair(nullptr,0);
             }
-
         }
 
         template<typename sample_t>
@@ -648,18 +648,16 @@ namespace zsndfile
         template<typename sample_t>
         std::pair<std::unique_ptr<sample_t[]>,sf_count_t> read_frames(const sf_count_t& frame_count) noexcept
         {
-            try
-            {
-                using detail::zsf_readf;
-                std::unique_ptr<sample_t[]> outbuff{new sample_t[frame_count * channel_count()]};
+            using detail::zsf_readf;
+            std::unique_ptr<sample_t[]> outbuff{new(std::nothrow) sample_t[frame_count * channel_count()]};
+            if(outbuff != nullptr){
                 auto ret = zsf_readf(_file,outbuff.get(),frame_count * channel_count());
                 return std::make_pair(std::move(outbuff),ret);
             }
-            catch (std::exception& e)
+            else
             {
                 return std::make_pair(nullptr,0);
             }
-
         }
 
         template<typename sample_t>
@@ -914,6 +912,22 @@ namespace zsndfile
         {
             return _is_file_cached;
         }
+        bool cache_section(const std::size_t& idx,std::size_t const& length = default_buffer_size) noexcept
+        {
+            std::unique_ptr<sample_t[]> section{new(std::nothrow) sample_t[length]};
+            if(section != nullptr)
+            {
+                _file.seek(idx,seek_mode::from_start);
+                _current_idx = idx;
+                _file.read<sample_t>(length);
+                std::swap(_buffer,section);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
     protected:
         sound_file_handle<sound_file_mode::read_only> _file;
 
@@ -931,6 +945,7 @@ namespace zsndfile
                 if(_buffer != nullptr)
                 {
                     _file.seek(0,seek_mode::from_start);
+                    _current_idx =0;
                     _file.read_frames<sample_t>(_file.frame_count(),_buffer.get());
                     return true;
                 }
@@ -940,17 +955,21 @@ namespace zsndfile
 
         inline sample_t& lookup(const std::size_t& idx) noexcept
         {
+            //direct read if whole file is available
             if(_is_file_cached)
             {
                 return _buffer[idx];
             }
-            else if ((idx >= _current_idx && idx < _current_idx + default_buffer_size) && _buffer != nullptr)
+            //read if we have the section needed available
+            else if ( (idx >= _current_idx && idx < _current_idx + default_buffer_size) && _buffer != nullptr )
             {
                 return _buffer[ idx - _current_idx ];
             }
+            //lookup the section needed and cache a section starting at that location
             else
             {
                 _file.seek(idx,seek_mode::from_start);
+                _current_idx = idx;
                 auto&& data = _file.read<sample_t>(default_buffer_size);
                 std::swap(_buffer,data.first);
                 return _buffer[0];
