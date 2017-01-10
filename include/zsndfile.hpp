@@ -277,30 +277,45 @@ namespace zsndfile
 
         //read
         template<typename sample_t>
-        auto read(const sf_count_t& sample_count) -> typename std::enable_if<is_readable(),std::pair<std::unique_ptr<sample_t[]>,sf_count_t>>::type
+        auto read(const sf_count_t& sample_count) noexcept -> typename std::enable_if<is_readable(),std::pair<std::unique_ptr<sample_t[]>,sf_count_t>>::type
         {
-            using detail::zsf_read;
-            std::unique_ptr<sample_t[]> outbuff{new sample_t[sample_count]};
-            auto ret = zsf_read(_file,outbuff.get(),sample_count);
-            return std::make_pair(std::move(outbuff),ret);
+            try{
+                using detail::zsf_read;
+                std::unique_ptr<sample_t[]> outbuff{new sample_t[sample_count]};
+                auto ret = zsf_read(_file,outbuff.get(),sample_count);
+                return std::make_pair(std::move(outbuff),ret);
+            }
+            catch(std::exception& e)
+            {
+                return std::make_pair(nullptr,0);
+            }
+
         }
         template<typename sample_t>
-        auto read(const sf_count_t& sample_count,sample_t* buffer) -> typename std::enable_if<is_readable(),sf_count_t>::type
+        auto read(const sf_count_t& sample_count,sample_t* buffer) noexcept -> typename std::enable_if<is_readable(),sf_count_t>::type
         {
             using detail::zsf_read;
             return zsf_read(_file,buffer,sample_count);
 
         }
         template<typename sample_t>
-        auto read_frames(const sf_count_t& frame_count) -> typename std::enable_if<is_readable(),std::pair<std::unique_ptr<sample_t[]>,sf_count_t>>::type
+        auto read_frames(const sf_count_t& frame_count) noexcept -> typename std::enable_if<is_readable(),std::pair<std::unique_ptr<sample_t[]>,sf_count_t>>::type
         {
-            using detail::zsf_readf;
-            std::unique_ptr<sample_t[]> outbuff{new sample_t[frame_count * channel_count()]};
-            auto ret = zsf_readf(_file,outbuff.get(),frame_count * channel_count());
-            return std::make_pair(std::move(outbuff),ret);
+            try
+            {
+                using detail::zsf_readf;
+                std::unique_ptr<sample_t[]> outbuff{new sample_t[frame_count * channel_count()]};
+                auto ret = zsf_readf(_file,outbuff.get(),frame_count * channel_count());
+                return std::make_pair(std::move(outbuff),ret);
+            }
+            catch (std::exception& e)
+            {
+                return std::make_pair(nullptr,0);
+            }
+
         }
         template<typename sample_t>
-        auto read_frames(const sf_count_t& frame_count, sample_t* buffer) -> typename std::enable_if<is_readable(),sf_count_t>::type
+        auto read_frames(const sf_count_t& frame_count, sample_t* buffer) noexcept -> typename std::enable_if<is_readable(),sf_count_t>::type
         {
             using detail::zsf_readf;
             return zsf_readf(_file,buffer,frame_count);
@@ -308,13 +323,13 @@ namespace zsndfile
 
         //write
         template<typename sample_t>
-        auto write(sample_t* data,const sf_count_t& sample_count) -> typename std::enable_if<is_writeable(),sf_count_t>::type
+        auto write(sample_t* data,const sf_count_t& sample_count) noexcept -> typename std::enable_if<is_writeable(),sf_count_t>::type
         {
             using detail::zsf_write;
             return zsf_write(_file,data,sample_count);
         }
         template<typename sample_t>
-        auto write_frames(sample_t* data,const sf_count_t& frame_count) -> typename std::enable_if<is_writeable(),sf_count_t>::type
+        auto write_frames(sample_t* data,const sf_count_t& frame_count) noexcept -> typename std::enable_if<is_writeable(),sf_count_t>::type
         {
             using detail::zsf_writef;
             return zsf_writef(_file,data,frame_count);
@@ -535,7 +550,7 @@ namespace zsndfile
         //            this will allow for faster lookup?
 
         //read_only indexing
-        const sample_t& operator[](const std::size_t& idx)
+        const sample_t& operator[](const std::size_t& idx) noexcept(lookup(idx))
         {
             return lookup(idx);
         }
@@ -553,7 +568,7 @@ namespace zsndfile
         const bool _is_file_cached;
         std::size_t _current_idx;
 
-        bool cache_file_if_requested(const bool& should_cache)
+        bool cache_file_if_requested(const bool& should_cache) noexcept
         {
             if(should_cache)
             {
@@ -575,7 +590,7 @@ namespace zsndfile
             }
         }
 
-        inline sample_t& lookup(const std::size_t& idx)
+        inline sample_t& lookup(const std::size_t& idx) noexcept
         {
             if(_is_file_cached)
             {
