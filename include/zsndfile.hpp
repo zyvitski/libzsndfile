@@ -104,6 +104,7 @@ namespace zsndfile
     {
         template<typename sample_t>
         sf_count_t zsf_read(SNDFILE*,sample_t*,sf_count_t);
+
         template<>
         sf_count_t zsf_read<short>(SNDFILE* file, short* buff, sf_count_t count)
         {
@@ -222,36 +223,23 @@ namespace zsndfile
         return true;
     }
 
-
-
     template<sound_file_mode mode>
-    class sound_file_handle
+    class sound_file_handle;
+
+    template<>
+    class sound_file_handle<sound_file_mode::read_only>
     {
     public:
-        constexpr static bool is_readable() noexcept
-        {
-            return (mode == sound_file_mode::read_only) || (mode == sound_file_mode::read_write);
-        }
-        constexpr static bool is_writeable() noexcept
-        {
-            return (mode == sound_file_mode::write_only) || (mode == sound_file_mode::read_write);
-        }
-
         explicit sound_file_handle(const std::string& path) : _file(nullptr)
         {
-            _file = sf_open(path.c_str(), static_cast<int>(mode),&_info);
+            _file = sf_open(path.c_str(), static_cast<int>(sound_file_mode::read_only),&_info);
             int err = sf_error(_file);
             throw_if_error(err);
         }
-        explicit sound_file_handle(const std::wstring& path) : _file(nullptr)
-        {
-            _file = sf_whcar_open(path.c_str(), static_cast<int>(mode),&_info);
-            int err = sf_error(_file);
-            throw_if_error(err);
-        }
+
         explicit sound_file_handle(const int& fd,const int& close_fd) : _file(nullptr)
         {
-            _file = sf_open(fd, static_cast<int>(mode),&_info,close_fd);
+            _file = sf_open_fd(fd, static_cast<int>(sound_file_mode::read_only),&_info,close_fd);
             int err = sf_error(_file);
             throw_if_error(err);
         }
@@ -263,7 +251,7 @@ namespace zsndfile
         //not going to wrap the enums for this one just yet,
         int command(int cmd,void* data,int datasize)
         {
-            return sd_command(_file,cmd,data,datasize);
+            return sf_command(_file,cmd,data,datasize);
         }
 
         //seek
@@ -274,7 +262,7 @@ namespace zsndfile
 
         //read
         template<typename sample_t>
-        auto read(const sf_count_t& sample_count) noexcept -> typename std::enable_if<is_readable(),std::pair<std::unique_ptr<sample_t[]>,sf_count_t>>::type
+        std::pair<std::unique_ptr<sample_t[]>,sf_count_t> read(const sf_count_t& sample_count) noexcept
         {
             try{
                 using detail::zsf_read;
@@ -289,14 +277,325 @@ namespace zsndfile
 
         }
         template<typename sample_t>
-        auto read(const sf_count_t& sample_count,sample_t* buffer) noexcept -> typename std::enable_if<is_readable(),sf_count_t>::type
+        sf_count_t read(const sf_count_t& sample_count,sample_t* buffer) noexcept
         {
             using detail::zsf_read;
             return zsf_read(_file,buffer,sample_count);
 
         }
         template<typename sample_t>
-        auto read_frames(const sf_count_t& frame_count) noexcept -> typename std::enable_if<is_readable(),std::pair<std::unique_ptr<sample_t[]>,sf_count_t>>::type
+        std::pair<std::unique_ptr<sample_t[]>,sf_count_t> read_frames(const sf_count_t& frame_count) noexcept
+        {
+            try
+            {
+                using detail::zsf_readf;
+                std::unique_ptr<sample_t[]> outbuff{new sample_t[frame_count * channel_count()]};
+                auto ret = zsf_readf(_file,outbuff.get(),frame_count * channel_count());
+                return std::make_pair(std::move(outbuff),ret);
+            }
+            catch (std::exception& e)
+            {
+                return std::make_pair(nullptr,0);
+            }
+        }
+        template<typename sample_t>
+        sf_count_t read_frames(const sf_count_t& frame_count, sample_t* buffer) noexcept
+        {
+            using detail::zsf_readf;
+            return zsf_readf(_file,buffer,frame_count);
+        }
+
+        const sf_count_t& frame_count() const noexcept
+        {
+            return _info.frames;
+        }
+        const int& channel_count() const noexcept
+        {
+            return _info.channels;
+        }
+        const int& sample_rate() const noexcept
+        {
+            return _info.samplerate;
+        }
+        const int& format() const noexcept
+        {
+            return _info.format;
+        }
+        const int& sections() const noexcept
+        {
+            return _info.sections;
+        }
+        const int& seekable() const noexcept
+        {
+            return _info.seekable;
+        }
+        //title
+        std::string title() noexcept
+        {
+            return sf_get_string(_file,SF_STR_TITLE);
+        }
+        //copyright
+        std::string copyright() noexcept
+        {
+            return sf_get_string(_file,SF_STR_COPYRIGHT);
+        }
+        //software
+        std::string software() noexcept
+        {
+            return sf_get_string(_file,SF_STR_SOFTWARE);
+        }
+//artist
+        std::string artist() noexcept
+        {
+            return sf_get_string(_file,SF_STR_ARTIST);
+        }
+//comment
+        std::string comment() noexcept
+        {
+            return sf_get_string(_file,SF_STR_COMMENT);
+        }
+//date
+        std::string date() noexcept
+        {
+            return sf_get_string(_file,SF_STR_DATE);
+        }
+//album
+        std::string album() noexcept
+        {
+            return sf_get_string(_file,SF_STR_ALBUM);
+        }
+//license
+        std::string license() noexcept
+        {
+            return sf_get_string(_file,SF_STR_LICENSE);
+        }
+//track_number
+        std::string track_number() noexcept
+        {
+            return sf_get_string(_file,SF_STR_TRACKNUMBER);
+        }
+//genre
+        std::string genre() noexcept
+        {
+            return sf_get_string(_file,SF_STR_GENRE);
+        }
+    protected:
+        SNDFILE* _file;
+        SF_INFO _info;
+
+        inline void throw_if_error(int err)
+        {
+            if(err != SF_ERR_NO_ERROR)
+            {
+                throw std::runtime_error(sf_error_number(err));
+            }
+        }
+    };
+
+    template<>
+    class sound_file_handle<sound_file_mode::write_only>
+    {
+    public:
+
+        explicit sound_file_handle(const std::string& path) : _file(nullptr)
+        {
+            _file = sf_open(path.c_str(), static_cast<int>(sound_file_mode::write_only),&_info);
+            int err = sf_error(_file);
+            throw_if_error(err);
+        }
+
+        explicit sound_file_handle(const int& fd,const int& close_fd) : _file(nullptr)
+        {
+            _file = sf_open_fd(fd, static_cast<int>(sound_file_mode::write_only),&_info,close_fd);
+            int err = sf_error(_file);
+            throw_if_error(err);
+        }
+        ~sound_file_handle()
+        {
+            sf_close(_file);
+        }
+
+        //not going to wrap the enums for this one just yet,
+        int command(int cmd,void* data,int datasize)
+        {
+            return sf_command(_file,cmd,data,datasize);
+        }
+
+        //seek
+        sf_count_t seek(const sf_count_t& nframes, const seek_mode& smode) noexcept
+        {
+            return sf_seek(_file,nframes,static_cast<int>(smode));
+        }
+//write
+        template<typename sample_t>
+        sf_count_t write(sample_t* data,const sf_count_t& sample_count) noexcept
+        {
+            using detail::zsf_write;
+            return zsf_write(_file,data,sample_count);
+        }
+        template<typename sample_t>
+        sf_count_t write_frames(sample_t* data,const sf_count_t& frame_count) noexcept
+        {
+            using detail::zsf_writef;
+            return zsf_writef(_file,data,frame_count);
+        }
+        void frame_count(const sf_count_t& value) noexcept
+        {
+            _info.frames = value;
+        }
+
+
+        void channel_count(const int& value) noexcept
+        {
+            _info.channels = value;
+        }
+
+
+        void sample_rate(const int& value) noexcept
+        {
+            _info.samplerate = value;
+        }
+
+
+        void format(const int& value) noexcept
+        {
+            _info.format = value;
+        }
+
+
+        void sections(const int& value) noexcept
+        {
+            _info.sections = value;
+        }
+
+
+        void seekable(const int& value) noexcept
+        {
+            _info.seekable = value;
+        }
+        void title(const std::string& value)
+        {
+            auto err = sf_set_string(_file,SF_STR_TITLE,value.c_str());
+            throw_if_error(err);
+        }
+        void copyright(const std::string& value)
+        {
+            auto err = sf_set_string(_file,SF_STR_COPYRIGHT,value.c_str());
+            throw_if_error(err);
+        }
+        void software(const std::string& value)
+        {
+            auto err = sf_set_string(_file,SF_STR_SOFTWARE,value.c_str());
+            throw_if_error(err);
+        }
+        void artist(const std::string& value)
+        {
+            auto err = sf_set_string(_file,SF_STR_ARTIST,value.c_str());
+            throw_if_error(err);
+        }
+        void comment(const std::string& value)
+        {
+            auto err = sf_set_string(_file,SF_STR_COMMENT,value.c_str());
+            throw_if_error(err);
+        }
+        void date(const std::string& value)
+        {
+            auto err = sf_set_string(_file,SF_STR_DATE,value.c_str());
+            throw_if_error(err);
+        }
+        void album(const std::string& value)
+        {
+            auto err = sf_set_string(_file,SF_STR_ALBUM,value.c_str());
+            throw_if_error(err);
+        }
+
+        void license(const std::string& value)
+        {
+            auto err = sf_set_string(_file,SF_STR_LICENSE,value.c_str());
+            throw_if_error(err);
+        }
+        void track_number(const std::string& value)
+        {
+            auto err = sf_set_string(_file,SF_STR_TRACKNUMBER,value.c_str());
+            throw_if_error(err);
+        }
+        void genre(const std::string& value)
+        {
+            auto err = sf_set_string(_file,SF_STR_GENRE,value.c_str());
+            throw_if_error(err);
+        }
+    protected:
+        SNDFILE* _file;
+        SF_INFO _info;
+
+        inline void throw_if_error(int err)
+        {
+            if(err != SF_ERR_NO_ERROR)
+            {
+                throw std::runtime_error(sf_error_number(err));
+            }
+        }
+    };
+
+    template<>
+    class sound_file_handle<sound_file_mode::read_write>
+    {
+    public:
+        explicit sound_file_handle(const std::string& path) : _file(nullptr)
+        {
+            _file = sf_open(path.c_str(), static_cast<int>(sound_file_mode::read_write),&_info);
+            int err = sf_error(_file);
+            throw_if_error(err);
+        }
+
+        explicit sound_file_handle(const int& fd,const int& close_fd) : _file(nullptr)
+        {
+            _file = sf_open_fd(fd, static_cast<int>(sound_file_mode::read_write),&_info,close_fd);
+            int err = sf_error(_file);
+            throw_if_error(err);
+        }
+        ~sound_file_handle()
+        {
+            sf_close(_file);
+        }
+
+        //not going to wrap the enums for this one just yet,
+        int command(int cmd,void* data,int datasize)
+        {
+            return sf_command(_file,cmd,data,datasize);
+        }
+
+        //seek
+        sf_count_t seek(const sf_count_t& nframes, const seek_mode& smode) noexcept
+        {
+            return sf_seek(_file,nframes,static_cast<int>(smode));
+        }
+
+        //read
+        template<typename sample_t>
+        std::pair<std::unique_ptr<sample_t[]>,sf_count_t> read(const sf_count_t& sample_count) noexcept
+        {
+            try{
+                using detail::zsf_read;
+                std::unique_ptr<sample_t[]> outbuff{new sample_t[sample_count]};
+                auto ret = zsf_read(_file,outbuff.get(),sample_count);
+                return std::make_pair(std::move(outbuff),ret);
+            }
+            catch(std::exception& e)
+            {
+                return std::make_pair(nullptr,0);
+            }
+
+        }
+        template<typename sample_t>
+        sf_count_t read(const sf_count_t& sample_count,sample_t* buffer) noexcept
+        {
+            using detail::zsf_read;
+            return zsf_read(_file,buffer,sample_count);
+
+        }
+        template<typename sample_t>
+        std::pair<std::unique_ptr<sample_t[]>,sf_count_t> read_frames(const sf_count_t& frame_count) noexcept
         {
             try
             {
@@ -312,7 +611,7 @@ namespace zsndfile
 
         }
         template<typename sample_t>
-        auto read_frames(const sf_count_t& frame_count, sample_t* buffer) noexcept -> typename std::enable_if<is_readable(),sf_count_t>::type
+        sf_count_t read_frames(const sf_count_t& frame_count, sample_t* buffer) noexcept
         {
             using detail::zsf_readf;
             return zsf_readf(_file,buffer,frame_count);
@@ -320,13 +619,13 @@ namespace zsndfile
 
         //write
         template<typename sample_t>
-        auto write(sample_t* data,const sf_count_t& sample_count) noexcept -> typename std::enable_if<is_writeable(),sf_count_t>::type
+        sf_count_t write(sample_t* data,const sf_count_t& sample_count) noexcept
         {
             using detail::zsf_write;
             return zsf_write(_file,data,sample_count);
         }
         template<typename sample_t>
-        auto write_frames(sample_t* data,const sf_count_t& frame_count) noexcept -> typename std::enable_if<is_writeable(),sf_count_t>::type
+        sf_count_t write_frames(sample_t* data,const sf_count_t& frame_count) noexcept
         {
             using detail::zsf_writef;
             return zsf_writef(_file,data,frame_count);
@@ -335,56 +634,62 @@ namespace zsndfile
 
 
         //file format info
-        auto frame_count() const noexcept -> typename std::enable_if<is_readable(),const sf_count_t&>::type
+        const sf_count_t& frame_count() const noexcept
         {
             return _info.frames;
         }
-        auto frame_count(const sf_count_t& value) const noexcept -> typename std::enable_if<is_writeable(),void>::type
+        const int& channel_count() const noexcept
+        {
+            return _info.channels;
+        }
+        const int& sample_rate() const noexcept
+        {
+            return _info.samplerate;
+        }
+        const int& format() const noexcept
+        {
+            return _info.format;
+        }
+        const int& sections() const noexcept
+        {
+            return _info.sections;
+        }
+        const int& seekable() const noexcept
+        {
+            return _info.seekable;
+        }
+
+        void frame_count(const sf_count_t& value) noexcept
         {
             _info.frames = value;
         }
 
-        auto channel_count() const noexcept -> typename std::enable_if<is_readable(), const int&>::type
-        {
-            return _info.channels;
-        }
-        auto channel_count(const int& value) const noexcept -> typename std::enable_if<is_writeable(),void>::type
+
+        void channel_count(const int& value) noexcept
         {
             _info.channels = value;
         }
 
-        auto sample_rate() const noexcept -> typename std::enable_if<is_readable(), const int&>::type
-        {
-            return _info.samplerate;
-        }
-        auto sample_rate(const int& value) const noexcept -> typename std::enable_if<is_writeable(),void>::type
+
+        void sample_rate(const int& value) noexcept
         {
             _info.samplerate = value;
         }
 
-        auto format() const noexcept -> typename std::enable_if<is_readable(), const int&>::type
-        {
-            return _info.format;
-        }
-        auto format(const int& value) const noexcept -> typename std::enable_if<is_writeable(),void>::type
+
+        void format(const int& value) noexcept
         {
             _info.format = value;
         }
 
-        auto sections() const noexcept -> typename std::enable_if<is_readable(), const int&>::type
-        {
-            return _info.sections;
-        }
-        auto sections(const int& value) const noexcept -> typename std::enable_if<is_writeable(),void>::type
+
+        void sections(const int& value) noexcept
         {
             _info.sections = value;
         }
 
-        auto seekable() const noexcept -> typename std::enable_if<is_readable(), const int&>::type
-        {
-            return _info.seekable;
-        }
-        auto seekable(const int& value) const noexcept -> typename std::enable_if<is_writeable(),void>::type
+
+        void seekable(const int& value) noexcept
         {
             _info.seekable = value;
         }
@@ -394,110 +699,110 @@ namespace zsndfile
         //metadata
 
         //title
-        auto title() noexcept -> typename std::enable_if<is_readable(),std::string>::type
+        std::string title() noexcept
         {
             return sf_get_string(_file,SF_STR_TITLE);
         }
-        auto title(const std::string& value) -> typename std::enable_if<is_writeable(),void>::type
+        void title(const std::string& value)
         {
             auto err = sf_set_string(_file,SF_STR_TITLE,value.c_str());
             throw_if_error(err);
         }
 
         //copyright
-        auto copyright() noexcept -> typename std::enable_if<is_readable(),std::string>::type
+        std::string copyright() noexcept
         {
             return sf_get_string(_file,SF_STR_COPYRIGHT);
         }
-        auto copyright(const std::string& value) -> typename std::enable_if<is_writeable(),void>::type
+        void copyright(const std::string& value)
         {
             auto err = sf_set_string(_file,SF_STR_COPYRIGHT,value.c_str());
             throw_if_error(err);
         }
 
         //software
-        auto software() noexcept -> typename std::enable_if<is_readable(),std::string>::type
+        std::string software() noexcept
         {
             return sf_get_string(_file,SF_STR_SOFTWARE);
         }
-        auto software(const std::string& value) -> typename std::enable_if<is_writeable(),void>::type
+        void software(const std::string& value)
         {
             auto err = sf_set_string(_file,SF_STR_SOFTWARE,value.c_str());
             throw_if_error(err);
         }
 
         //artist
-        auto artist() noexcept -> typename std::enable_if<is_readable(),std::string>::type
+        std::string artist() noexcept
         {
             return sf_get_string(_file,SF_STR_ARTIST);
         }
-        auto artist(const std::string& value) -> typename std::enable_if<is_writeable(),void>::type
+        void artist(const std::string& value)
         {
             auto err = sf_set_string(_file,SF_STR_ARTIST,value.c_str());
             throw_if_error(err);
         }
 
         //comment
-        auto comment() noexcept -> typename std::enable_if<is_readable(),std::string>::type
+        std::string comment() noexcept
         {
             return sf_get_string(_file,SF_STR_COMMENT);
         }
-        auto comment(const std::string& value) -> typename std::enable_if<is_writeable(),void>::type
+        void comment(const std::string& value)
         {
             auto err = sf_set_string(_file,SF_STR_COMMENT,value.c_str());
             throw_if_error(err);
         }
 
         //date
-        auto date() noexcept -> typename std::enable_if<is_readable(),std::string>::type
+        std::string date() noexcept
         {
             return sf_get_string(_file,SF_STR_DATE);
         }
-        auto date(const std::string& value) -> typename std::enable_if<is_writeable(),void>::type
+        void date(const std::string& value)
         {
             auto err = sf_set_string(_file,SF_STR_DATE,value.c_str());
             throw_if_error(err);
         }
 
         //album
-        auto album() noexcept -> typename std::enable_if<is_readable(),std::string>::type
+        std::string album() noexcept
         {
             return sf_get_string(_file,SF_STR_ALBUM);
         }
-        auto album(const std::string& value) -> typename std::enable_if<is_writeable(),void>::type
+        void album(const std::string& value)
         {
             auto err = sf_set_string(_file,SF_STR_ALBUM,value.c_str());
             throw_if_error(err);
         }
 
         //license
-        auto license() noexcept -> typename std::enable_if<is_readable(),std::string>::type
+        std::string license() noexcept
         {
             return sf_get_string(_file,SF_STR_LICENSE);
         }
-        auto license(const std::string& value) -> typename std::enable_if<is_writeable(),void>::type
+        void license(const std::string& value)
         {
             auto err = sf_set_string(_file,SF_STR_LICENSE,value.c_str());
             throw_if_error(err);
         }
 
         //track_number
-        auto track_number() noexcept -> typename std::enable_if<is_readable(),std::string>::type
+        std::string track_number() noexcept
         {
             return sf_get_string(_file,SF_STR_TRACKNUMBER);
         }
-        auto track_number(const std::string& value) -> typename std::enable_if<is_writeable(),void>::type
+        void track_number(const std::string& value)
         {
             auto err = sf_set_string(_file,SF_STR_TRACKNUMBER,value.c_str());
             throw_if_error(err);
         }
 
         //genre
-        auto genre() noexcept -> typename std::enable_if<is_readable(),std::string>::type
+        std::string genre() noexcept
         {
             return sf_get_string(_file,SF_STR_GENRE);
         }
-        auto genre(const std::string& value) -> typename std::enable_if<is_writeable(),void>::type
+        void genre(const std::string& value)
         {
             auto err = sf_set_string(_file,SF_STR_GENRE,value.c_str());
             throw_if_error(err);
@@ -528,11 +833,7 @@ namespace zsndfile
                                                     _is_file_cached(cache_file_if_requested(cache_file)),
                                                     _current_idx(0)
         {}
-        explicit sound_file(const std::wstring& filename,
-                            const bool& cache_file):_file(filename),
-                                                    _is_file_cached(cache_file_if_requested(cache_file)),
-                                                    _current_idx(0)
-        {}
+
         explicit sound_file(const int& fd,
                             const int& close_fd
                             ,const bool& cache_file):_file(fd,close_fd),
@@ -547,7 +848,7 @@ namespace zsndfile
         //            this will allow for faster lookup?
 
         //read_only indexing
-        const sample_t& operator[](const std::size_t& idx) noexcept(lookup(idx))
+        const sample_t& operator[](const std::size_t& idx) noexcept
         {
             return lookup(idx);
         }
@@ -560,7 +861,7 @@ namespace zsndfile
             return _is_file_cached;
         }
     protected:
-        sound_file_handle<sound_file_mode::read_write> _file;
+        sound_file_handle<sound_file_mode::read_only> _file;
         std::unique_ptr<sample_t[]> _buffer;
         const bool _is_file_cached;
         std::size_t _current_idx;
@@ -596,7 +897,7 @@ namespace zsndfile
             else
             {
                 //do we already have that section loaded
-                if (idx >= _current_idx && idx < _current_idx + default_buffer_size)
+                if ((idx >= _current_idx && idx < _current_idx + default_buffer_size) && _buffer!= nullptr)
                 {
                     return _buffer[ idx - _current_idx];
                 }
@@ -604,14 +905,12 @@ namespace zsndfile
                 {
                     _file.seek(idx,seek_mode::from_start);
                     auto&& data = _file.read<sample_t>(default_buffer_size);
-                    std::swap(_buffer,data);
+                    std::swap(_buffer,data.first);
                     return _buffer[0];
                 }
             }
         }
-
     };
-
 }
 
 #endif
