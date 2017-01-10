@@ -950,6 +950,12 @@ namespace zsndfile
                     return true;
                 }
             }
+            else
+            {
+                //alloc buffer to default
+                _buffer = std::unique_ptr<sample_t[]>{new(std::nothrow) sample_t[default_buffer_size]};
+                std::fill(&_buffer[0],&_buffer[default_buffer_size],0);
+            }
             return false;
         }
 
