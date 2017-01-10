@@ -970,8 +970,7 @@ namespace zsndfile
             {
                 _file.seek(idx,seek_mode::from_start);
                 _current_idx = idx;
-                auto&& data = _file.read<sample_t>(default_buffer_size);
-                std::swap(_buffer,data.first);
+                _file.read<sample_t>(default_buffer_size,_buffer.get());
                 return _buffer[0];
             }
         }
