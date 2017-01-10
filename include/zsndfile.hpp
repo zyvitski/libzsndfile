@@ -912,27 +912,20 @@ namespace zsndfile
         {
             return _is_file_cached;
         }
-        bool cache_section(const std::size_t& idx,std::size_t const& length = default_buffer_size) noexcept
+        //load a specific section into cache
+        //will do nothing if whole file is alread available
+        bool cache_section(const std::size_t& idx) noexcept
         {
             if(_is_file_cached)
             {
-            return true;
+                return true;
             }
             else
             {
-                std::unique_ptr<sample_t[]> section{new(std::nothrow) sample_t[length]};
-                if(section != nullptr)
-                {
-                    _file.seek(idx,seek_mode::from_start);
-                    _current_idx = idx;
-                    _file.read<sample_t>(length);
-                    std::swap(_buffer,section);
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
+                _file.seek(idx,seek_mode::from_start);
+                _current_idx = idx;
+                _file.read<sample_t>(default_buffer_size,_buffer.get());
+                return true;
             }
         }
     protected:
