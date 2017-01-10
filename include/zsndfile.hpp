@@ -914,18 +914,25 @@ namespace zsndfile
         }
         bool cache_section(const std::size_t& idx,std::size_t const& length = default_buffer_size) noexcept
         {
-            std::unique_ptr<sample_t[]> section{new(std::nothrow) sample_t[length]};
-            if(section != nullptr)
+            if(_is_file_cached)
             {
-                _file.seek(idx,seek_mode::from_start);
-                _current_idx = idx;
-                _file.read<sample_t>(length);
-                std::swap(_buffer,section);
-                return true;
+            return true;
             }
             else
             {
-                return false;
+                std::unique_ptr<sample_t[]> section{new(std::nothrow) sample_t[length]};
+                if(section != nullptr)
+                {
+                    _file.seek(idx,seek_mode::from_start);
+                    _current_idx = idx;
+                    _file.read<sample_t>(length);
+                    std::swap(_buffer,section);
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
             }
         }
     protected:
