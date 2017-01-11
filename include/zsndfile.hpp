@@ -922,7 +922,7 @@ namespace zsndfile
             }
             else
             {
-                _file.seek(idx,seek_mode::from_start);
+                _file.seek(idx/_file.channel_count(),seek_mode::from_start);
                 _current_idx = idx;
                 _file.read<sample_t>(default_buffer_size,_buffer.get());
                 return true;
@@ -950,12 +950,7 @@ namespace zsndfile
                     return true;
                 }
             }
-            else
-            {
-                //alloc buffer to default
-                _buffer = std::unique_ptr<sample_t[]>{new(std::nothrow) sample_t[default_buffer_size]};
-                std::fill(&_buffer[0],&_buffer[default_buffer_size],0);
-            }
+
             return false;
         }
 
@@ -974,8 +969,12 @@ namespace zsndfile
             //lookup the section needed and cache a section starting at that location
             else
             {
-                _file.seek(idx,seek_mode::from_start);
+                _file.seek(idx/_file.channel_count(),seek_mode::from_start);
                 _current_idx = idx;
+                if(_buffer == nullptr)
+                {
+                    _buffer = std::unique_ptr<sample_t[]>{new(std::nothrow) sample_t[default_buffer_size]};
+                }
                 _file.read<sample_t>(default_buffer_size,_buffer.get());
                 return _buffer[0];
             }
